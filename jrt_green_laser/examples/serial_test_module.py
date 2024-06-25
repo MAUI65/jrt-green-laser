@@ -1,4 +1,3 @@
-from laser_serial import Laser
 from time import sleep
 
 port = "/dev/ttyUSB0"
