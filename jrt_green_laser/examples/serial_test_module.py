@@ -1,7 +1,8 @@
+from jrt_green_laser import laser_serial as laser
 from time import sleep
 
 port = "/dev/ttyUSB0"
-laser = Laser(port, debug=False)
+laser = laser.Laser(port, debug=False)
 
 if (laser.ser != None):
 

@@ -18,7 +18,7 @@ An example of using the library with the sensor connected to /dev/ttyUSB0 (for l
 
 ### One Shot Distance Measurement
 '''python
-import jrt_green_laser.laser_serial as laser
+from jrt_green_laser import laser_serial as laser
 
 port = "/dev/ttyUSB0"
 laser = laser.Laser(port, debug=False)
@@ -27,7 +27,7 @@ laser.one_shot_distance_measurement(mode='auto', display=True)
 '''
 ### Continuous Shot Distance Measurement
 '''python
-import jrt_green_laser.laser_serial as laser
+from jrt_green_laser import laser_serial as laser
 
 port = "/dev/ttyUSB0"
 laser = laser.Laser(port, debug=False)

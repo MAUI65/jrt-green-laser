@@ -176,6 +176,7 @@ class Laser:
         distance, quality = self.decode_distance_measurement(response.hex())
         distance_cm = distance / 10  # Convert distance from mm to cm
         print(f"Distance: {distance_cm:.1f} cm, Quality: {quality}")
+        return distance, quality
 
 
 
