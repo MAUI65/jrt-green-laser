@@ -1,0 +1,27 @@
+[project]
+name = "jrt-green-laser"
+version = "0.1"
+authors = [
+  { name="Samuel Reedy", email="samreedy7@gmail.com" },
+]
+description = "A python package to use the BA9D Green Laser Module from Chengdu JRT"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = ["pyserial >= 3.5",]
+
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+jrt-green-laser = "jrt-green-laser.__main__:main"
+
+[project.urls]
+"Homepage" = "https://github.com/MAUI65/jrt-green-laser"
