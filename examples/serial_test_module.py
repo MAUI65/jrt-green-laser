@@ -2,18 +2,19 @@ from laser_serial import Laser
 from time import sleep
 
 port = "/dev/ttyUSB0"
-laser = Laser(port, debug=True)
-laser.set_laser(False)
+laser = Laser(port, debug=False)
 
-laser.get_status()
+if (laser.ser != None):
 
-laser.start_continue_distance_measurement()
+    laser.get_status()
 
-x = 0
-while x < 10:
-    print(f"({x})")
-    laser.read_measurement()
-    sleep(0.1)
-    x += 1
+    laser.start_continue_distance_measurement()
 
-# laser.set_laser(False)
+
+    time = 0
+    while time < 10:
+        laser.read_measurement()
+        sleep(1)
+        time += 1
+
+    
