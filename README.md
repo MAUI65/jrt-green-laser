@@ -25,6 +25,14 @@ laser = laser.Laser(port, debug=False)
 
 laser.one_shot_distance_measurement(mode='auto', display=True)
 ```
+Example Output
+```markdown
+Setting RTS
+Module Bootup: STARTING
+Module Bootup: COMPLETE 
+
+Distance: 48.4 cm, Quality: 114
+```
 
 ### Continuous Shot Distance Measurement
 ```python
@@ -37,4 +45,16 @@ laser.start_continue_distance_measurement()
 
 while True:
     laser.read_measurement()
+```
+Example Output
+```markdown
+Setting RTS
+Module Bootup: STARTING
+Module Bootup: COMPLETE 
+
+Distance: 48.5 cm, Quality: 115
+Distance: 48.4 cm, Quality: 111
+Distance: 48.5 cm, Quality: 84
+...
+(Note: Output will continue until the loop is interrupted.)
 ```
