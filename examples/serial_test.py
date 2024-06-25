@@ -53,8 +53,8 @@ def decode_distance_measurement(response_hex):
     distance = int(distance_hex, 16)
     quality = int(quality_hex, 16)
 
-    print(f"Hex Distance: {distance_hex}, Converted Distance: {distance}")
-    print(f"Hex Quality: {quality_hex}, Converted Quality: {quality}")
+    # print(f"Hex Distance: {distance_hex}, Converted Distance: {distance}")
+    # print(f"Hex Quality: {quality_hex}, Converted Quality: {quality}")
 
     return distance, quality
 
@@ -72,25 +72,21 @@ def main():
         # Wait for the module to boot up
         sleep(3)
 
-        # Read Module Latest Status
-        response = write_read_command("READ_MODULE_LATEST_STATUS", ser)
-        print("Get reply: ", response.hex(), "\n")
-
-        # Read Hardware Version
-        response = write_read_command("READ_HARDWARE_VERSION_NUMBER", ser)
-        print("Get reply: ", response.hex(), "\n")
-
         # Turn on laser
         response = write_read_command("TURN_ON_LASER", ser)
-        print("Get reply: ", response.hex(), "\n")
+        print(f"Get reply: {response.hex()}")
+        print("\n")
 
         sleep(1.)
 
-        response = write_read_command("START_1_SHOT_AUTO_DISTANCE_MEASURE", ser)
-        print("Get reply: ", response.hex(), "\n")
+        response = write_read_command("START_1_SHOT_SLOW_DISTANCE_MEASURE", ser)
+        print(f"Get reply: {response.hex()}")
 
         distance, quality = decode_distance_measurement(response.hex())
         print(f"Distance: {distance} mm, Signal Quality: {quality}")
+        print("\n")
+
+        sleep(1.)
 
         response = write_read_command("TURN_OFF_LASER", ser)
         print("Get reply: ", response.hex(), "\n")
