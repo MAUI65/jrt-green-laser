@@ -1,6 +1,6 @@
 import serial
 from time import sleep
-from laser_commands import commands
+from .laser_commands import commands
 
 class Laser:
     def __init__(self, port, debug=False):
