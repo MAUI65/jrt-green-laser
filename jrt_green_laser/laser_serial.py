@@ -7,6 +7,8 @@ class Laser:
         self.port = port
         self.ser = self._init_serial()
         self.debug = debug
+        self.distance = None
+        self.quality = None
 
     def _init_serial(self):
         try:
@@ -26,65 +28,101 @@ class Laser:
             print(f"Failed to open serial port {self.port}: {e}")
             return None
     
-    def calculate_checksum(self, command):
-        relevant_parts = command[1:]  # ignore \xaa
+    def calculate_checksum(self, command_parts):
+        relevant_parts = command_parts["address"] + command_parts["register"] + command_parts["count"] + command_parts["payload"]
         checksum = sum(relevant_parts) % 256
-        return checksum
+        print(f"Checksum: {checksum}")
+        return bytes([checksum])
 
-    def append_checksum(self, command):
-        checksum = self.calculate_checksum(command)
-        updated_command = command + bytes([checksum])
-        return updated_command
+
+    def update_checksum(self, command_parts):
+        checksum = self.calculate_checksum(command_parts)
+        command_parts["checksum"] = checksum
+        return command_parts
+
     
-    def write_command(self,command):
+    def write_command(self, cmd_info, payload=b''):
         if self.ser:
             try:
+                # Check for placeholder payload and replace if necessary
+                if cmd_info["payload"] == b'/PAYLOAD':
+                    cmd_info["payload"] = payload
+
+                # Check for placeholder checksum and calculate if necessary
+                if cmd_info["checksum"] == b'/SUM':
+                    cmd_info = self.update_checksum(cmd_info)
+
+                # Construct the full command from the individual components
+                command = (cmd_info["head"] + cmd_info["address"] + cmd_info["register"] + 
+                        cmd_info["count"] + cmd_info["payload"] + cmd_info["checksum"])
+                
+                print(f"Full Command: {command}")
+
                 self.ser.write(command)
+
                 if self.debug:
                     print(f"Wrote Command Ascii: {command}")
                     print(f"Wrote Command Hex: {command.hex()}")
                 return True
+            
             except serial.SerialException as e:
                 print(f"Error communicating with laser: {e}")
         else:
             print("Serial connection not established.")
         return False
 
+
+
     def read_command(self):
         if self.ser:
-            message = bytearray()
+            header = self.ser.read(1)
             in_message = False
 
-            while True:
-                byte = self.ser.read(1)
-                if byte == b'\xaa':
-                    # If we're already in a message, and we encounter another start byte,
-                    # it could indicate the start of a new message. Break or handle accordingly.
-                    if in_message:
-                        # Here, you might want to check if the message before this was complete
-                        # based on your protocol. If it was, break, else keep reading.
-                        break
-                    else:
-                        in_message = True
-                if in_message:
-                    message += byte
+            if header != b'\xaa' or header != b'\xee':
+                while header != b'\xaa' and header != b'\xee':
+                    header = self.ser.read(1)
+                    print(f"New Header: {header.hex()}")
+                if self.debug:
+                    print(f"Header Corrected to: {header.hex()}")
 
-                # Implement logic to determine if the message is complete.
-                # This could be based on length, checksum, or specific end markers.
-                # If complete, break.
+            # Read address
+            address = self.ser.read(1)
+            register = self.ser.read(2)
+            count = self.ser.read(2)
+            payload = self.ser.read(int(count.hex(), 16) + 1)
+
+            if register == b'\x00\x22':
+                quality = int(self.ser.read(2).hex(), 16)
+                self.quality = quality
+
+            checksum = self.ser.read(1)
+
+            message = header + address + register + count + payload + checksum
 
             if self.debug:
                 print(f"Response Ascii: {message}")
                 print(f"Response Hex: {message.hex()}")
 
-            return message
+            if checksum != self.calculate_checksum({
+                "address": address,
+                "register": register,
+                "count": count,
+                "payload": payload
+            }):
+                print("Checksum error")
+                raise Exception('Invalid checksum')
+
+            if header == b'\xee':
+                raise Exception('Error response')
+            
+            return payload
         else:
             print("Serial connection not established.")
         return None
     
     def set_laser(self, enable=True):
         command_key = "TURN_ON_LASER" if enable else "TURN_OFF_LASER"
-        write_state = self.write_command(commands[command_key]["command"])
+        write_state = self.write_command(commands[command_key])
         
         if write_state:
             sleep(2.0)
@@ -92,7 +130,7 @@ class Laser:
 
     def get_status(self):
         print("Checking Status")
-        command = commands["READ_MODULE_LATEST_STATUS"]["command"]
+        command = commands["READ_MODULE_LATEST_STATUS"]
         self.write_command(command)
 
         response = self.read_command()
@@ -140,13 +178,13 @@ class Laser:
 
     def one_shot_distance_measurement(self, mode='auto', display=True):
         if mode == 'slow':
-            command = commands["START_1_SHOT_SLOW_DISTANCE_MEASURE"]["command"]
+            cmd_info = commands["START_1_SHOT_SLOW_DISTANCE_MEASURE"]
         elif mode == 'fast':
-            command = commands["START_1_SHOT_FAST_DISTANCE_MEASURE"]["command"]
+            cmd_info = commands["START_1_SHOT_FAST_DISTANCE_MEASURE"]
         else:
-            command = commands["START_1_SHOT_AUTO_DISTANCE_MEASURE"]["command"]
+            cmd_info = commands["START_1_SHOT_AUTO_DISTANCE_MEASURE"]
 
-        self.write_command(command)
+        self.write_command(cmd_info)
         response = self.read_command()
 
         distance, quality = self.decode_distance_measurement(response.hex())
@@ -159,11 +197,11 @@ class Laser:
     
     def start_continue_distance_measurement(self, mode='auto'):
         if mode == 'slow':
-            command = commands["START_CONTINUOUS_SLOW_DISTANCE_MEASURE"]["command"]
+            command = commands["START_CONTINUOUS_SLOW_DISTANCE_MEASURE"]
         elif mode == 'fast':
-            command = commands["START_CONTINUOUS_FAST_DISTANCE_MEASURE"]["command"]
+            command = commands["START_CONTINUOUS_FAST_DISTANCE_MEASURE"]
         else:
-            command = commands["START_CONTINUOUS_AUTO_DISTANCE_MEASURE"]["command"]
+            command = commands["START_CONTINUOUS_AUTO_DISTANCE_MEASURE"]
         
         self.write_command(command)
 
